@@ -2,8 +2,9 @@
 
 ## 📌 專案簡介
 本專案為 **AI Cup 2025 銀行帳戶異常交易偵測**，使用 **XGBoost** 搭配 **粒子群最佳化 (PSO)** 進行超參數搜尋，並透過模組化架構實現 **可維護、可重現、團隊友善** 的 ML pipeline。  
-
-Pipeline 包含：
+---
+## 📂 專案結構 參閱 structure.txt
+## 📂 Pipeline 包含：
 1. 資料載入與檢查  
 2. 特徵工程（帳戶層級特徵：金額、時間、網路）  
 3. 前處理（缺失值補值、標準化）  
@@ -36,6 +37,10 @@ pip install -r requirements.txt
 bash ./scripts/run_training.sh
 ```
 ---
+
+
+
+
 
 
 

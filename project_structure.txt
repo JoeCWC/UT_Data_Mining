@@ -1,0 +1,43 @@
+project_root/
+│── configs/
+│   └── config.yaml                  # 路徑與模型參數
+│
+│── src/
+│   ├── data/                        # 資料處理
+│   │   ├── load_data.py             # 載入資料
+│   │   ├── labeling.py              # 建立標籤
+│   │   └── split.py                 # 切分資料
+│   │
+│   ├── features/
+│   │   └── build_features.py        # 特徵工程
+│   │
+│   ├── preprocessing/
+│   │   └── pipeline.py              # 前處理 pipeline
+│   │
+│   ├── optimization/                # 超參數搜尋
+│   │   ├── pso.py                   # 粒子群演算法
+│   │   └── fitness.py               # 適應度函數 (AUC)
+│   │
+│   ├── models/
+│   │   └── train.py                 # 訓練 XGBoost
+│   │
+│   ├── evaluation/
+│   │   └── metrics.py               # 評估指標、threshold 搜尋
+│   │
+│   ├── predict/
+│   │   └── predict.py               # 預測流程
+│   │
+│   ├── utils/                       # 工具模組
+│   │   ├── file_utils.py            # 檔案檢查/目錄建立
+│   │   ├── class_weights.py         # 樣本不平衡處理
+│   │   └── io_utils.py              # 模型存取 (joblib)
+│   │
+│   └── train.py                     # 主程式 (呼叫上述模組)
+│
+│── scripts/
+│   └── run_training.sh              # 執行訓練的腳本
+│
+│── data_set/                        # 原始資料
+│── outputs/                         # 模型、預測結果
+│── tests/                           # 測試程式
+│── README.md
