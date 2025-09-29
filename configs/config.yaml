@@ -1,0 +1,24 @@
+input:
+  acct_transaction_csv: "data_set/acct_transaction.csv"
+  acct_alert_csv: "data_set/acct_alert.csv"
+  acct_predict_csv: "data_set/acct_predict.csv"
+
+output:
+  acct_predict_result_csv: "outputs/acct_predict_result.csv"
+  saved_model_path: "outputs/xgb_acctlevel_model.joblib"
+  plots_dir: "outputs/plots"
+
+model:
+  #max_depth: 5
+  #learning_rate: 0.05
+  n_estimators: 5000
+  #subsample: 0.9
+  #colsample_bytree: 0.9
+  #reg_lambda: 1.5
+  #reg_alpha: 0.3
+  early_stopping_rounds: 100
+  eval_metric: ["auc", "logloss"]
+  objective: "binary:logistic"
+  device: "cuda"
+  random_state: 42
+  n_jobs: -1
