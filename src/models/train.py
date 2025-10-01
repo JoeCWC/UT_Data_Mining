@@ -6,7 +6,7 @@ import os
 from datetime import datetime
 
 
-def train_xgb(X_train, y_train, X_val, y_val, params, output_dir):
+def train_xgb(X_train, y_train, X_val, y_val, params, output_dir: str):
     """訓練 XGBoost 模型並輸出監控圖表 (自動加上時間戳記)"""
     os.makedirs(output_dir, exist_ok=True)
     # 建立時間戳記 (例如 20250929_0005)
@@ -49,7 +49,8 @@ def train_xgb(X_train, y_train, X_val, y_val, params, output_dir):
 
     # 視覺化決策樹 (第一棵樹)
     plt.figure(figsize=(20, 10))
-    plot_tree(model, num_trees=0, rankdir="LR")
+    #plot_tree(model, tree_idxs=0, rankdir="LR")
+    plot_tree(model, tree_idx=0, graph_attrs={'rankdir': 'LR'})
     plt.savefig(os.path.join(output_dir, f"tree_structure_{timestamp}.png"))
     plt.close()
 

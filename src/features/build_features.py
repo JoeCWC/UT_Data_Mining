@@ -41,7 +41,6 @@ import pandas as pd
 
 def build_account_features(txn_df: pd.DataFrame) -> pd.DataFrame:
     """建立帳戶層級特徵 (金額、時間、網路)"""
-    print("[INFO] 建立帳戶層級特徵...")
 
     # (a) 金額特徵
     amt_stats = txn_df.groupby("from_acct")["txn_amt"].agg(

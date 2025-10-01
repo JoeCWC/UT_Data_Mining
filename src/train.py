@@ -7,14 +7,16 @@ import numpy as np
 from data.load_data import load_transaction_data, load_alert_data
 from data.labeling import create_labels
 from features.build_features import build_account_features
+from features.monitor_features import monitor_account_features
 from preprocessing.pipeline import build_preprocessing_pipeline
-from utils.file_utils import check_input_files, ensure_output_dirs
+from utils.file_utils import check_input_files, get_output_dir
 from utils.class_weights import compute_scale_pos_weight
 from utils.io_utils import save_model, load_model
 from optimization.pso import PSO
 from optimization.fitness import fitness_function
 from models.train import train_xgb
 from evaluation.metrics import evaluate_model, find_best_threshold
+from evaluation.diagnose_feature import diagnose_features
 from predict.predict import run_prediction
 
 # =========================
@@ -30,17 +32,16 @@ config_path = os.path.join(project_root, args.config)
 with open(config_path, "r", encoding="utf-8") as f:
     config = yaml.safe_load(f)
 
-
-# 檔案路徑
+# Input檔案路徑
 acct_transaction_csv = config["input"]["acct_transaction_csv"]
 acct_alert_csv = config["input"]["acct_alert_csv"]
 acct_predict_csv = config["input"]["acct_predict_csv"]
-acct_predict_result_csv = config["output"]["acct_predict_result_csv"]
-saved_model_path = config["output"]["saved_model_path"]
 
-# 檢查檔案與目錄
+# 檢查Input檔案
 check_input_files([acct_transaction_csv, acct_alert_csv, acct_predict_csv])
-ensure_output_dirs([acct_predict_result_csv, saved_model_path])
+
+# 設定Output檔案路徑
+base_output_dir = get_output_dir("outputs")
 
 # =========================
 # 2. 載入資料
@@ -59,6 +60,9 @@ acct_features = create_labels(acct_features, alert_df)
 
 X = acct_features.drop(columns=["acct", "label"])
 y = acct_features["label"]
+
+feature_plots_dir = os.path.join(base_output_dir, "feature_plots")
+monitor_account_features(acct_features, output_dir=feature_plots_dir)
 
 # =========================
 # 4. 切分資料
@@ -97,19 +101,23 @@ bounds = np.array([
 ])
 
 print("[INFO] 開始粒子群最佳化 (PSO)...")
+pso_config = config["pso"]
+bounds = np.array(pso_config["bounds"])
 fitness = lambda params: fitness_function(params, X_train_processed, y_train, scale_pos_weight)
-pso = PSO(fitness_func=fitness, dim=6, bounds=bounds, num_particles=10, max_iter=10)
+pso = PSO(
+    fitness_func=fitness,
+    dim=pso_config["dim"],
+    bounds=bounds,
+    num_particles=pso_config["num_particles"],
+    max_iter=pso_config["max_iter"]
+)
 best_params, best_score = pso.optimize()
-
 print(f"[INFO] PSO 最佳參數: {best_params}")
 print(f"[INFO] PSO 最佳 AUC: {best_score:.4f}")
 
 # =========================
 # 8. 訓練最終模型
 # =========================
-output_dir = config["output"].get("plots_dir", "outputs/plots")
-os.makedirs(output_dir, exist_ok=True)
-
 params = {
     "scale_pos_weight": scale_pos_weight,
     "max_depth": int(best_params[0]),
@@ -128,12 +136,16 @@ params = {
 }
 print(f"[INFO] 最終模型參數: {params}")
 print("[INFO] 訓練最終模型...")
-model = train_xgb(X_train_processed, y_train, X_test_processed, y_test, params, output_dir=config["output"]["plots_dir"])
-
+model_plots_dir = os.path.join(base_output_dir, "model_plots")
+model = train_xgb(X_train_processed, y_train, X_test_processed, y_test, params, output_dir=model_plots_dir)
 
 # =========================
 # 9. 評估模型
 # =========================
+print("[INFO] 進行特徵診斷...")
+summary_csv = os.path.join(base_output_dir, "feature_diagnosis_summary.csv")
+diagnose_features(X_train, X_test, y_train, y_test, model, output_dir=feature_plots_dir, summary_csv=summary_csv)
+
 report, auc, y_pred, y_proba = evaluate_model(model, X_test_processed, y_test)
 print(report)
 print(f"AUC: {auc:.4f}")
@@ -144,6 +156,7 @@ print(f"[INFO] 最佳 Threshold: {best_threshold:.2f}, F1={best_f1:.4f}")
 # =========================
 # 10. 儲存模型
 # =========================
+saved_model_path = os.path.join(base_output_dir, "xgb_acctlevel_model.joblib")
 save_model({"pipeline": pipeline, "model": model, "best_threshold": best_threshold}, saved_model_path)
 print(f"[INFO] 模型已儲存到 {saved_model_path}")
 
@@ -153,5 +166,5 @@ print(f"[INFO] 模型已儲存到 {saved_model_path}")
 saved = load_model(saved_model_path)
 pipeline, model, best_threshold = saved["pipeline"], saved["model"], saved["best_threshold"]
 
+acct_predict_result_csv = os.path.join(base_output_dir, "acct_predict_result.csv")
 result_df = run_prediction(model, pipeline, acct_features, acct_predict_csv, acct_predict_result_csv)
-print(f"[INFO] 預測完成，結果輸出到 {acct_predict_result_csv}")
